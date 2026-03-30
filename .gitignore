@@ -1,0 +1,26 @@
+# Dependencies
+node_modules/
+surveyapp/client/node_modules/
+surveyapp/server/node_modules/
+
+# Build output
+surveyapp/client/build/
+
+# Environment
+surveyapp/server/.env
+.env
+
+# Database (runtime data)
+surveyapp/server/data/db.json
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Course documents
+surveyapp/*.pdf
+surveyapp/*.docx

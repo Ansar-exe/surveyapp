@@ -1,0 +1,12 @@
+{
+  "name": "surveyapp",
+  "version": "1.0.0",
+  "description": "SurveyPro 98 — Full Stack Online Survey Service",
+  "scripts": {
+    "client": "cd client && npm start",
+    "server": "cd server && npm run dev",
+    "install:all": "cd client && npm install && cd ../server && npm install",
+    "build": "cd client && npm run build"
+  },
+  "author": "SurveyPro 98 Team"
+}

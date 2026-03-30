@@ -15,8 +15,8 @@ const PORT = process.env.PORT || 5000;
 // ── Middleware ──
 app.use(cors({
   origin: process.env.NODE_ENV === 'production'
-    ? false                       // same-origin in prod
-    : 'http://localhost:3000',    // React dev server
+    ? process.env.CLIENT_URL || true
+    : 'http://localhost:3000',
   credentials: true,
 }));
 app.use(express.json({ limit: '1mb' }));

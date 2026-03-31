@@ -7,8 +7,9 @@ import { Window, CategoryBadge, Alert, EmptyState, Loader } from '../components/
 const CATEGORIES = ['Все', 'Бизнес', 'Технологии', 'Образование', 'Здоровье', 'Развлечения', 'Другое'];
 
 export default function SurveysPage() {
-  const { surveys, fetchSurveys, loading, backendUp } = useSurveys();
+  const { surveys, fetchSurveys, deleteSurvey, loading, backendUp } = useSurveys();
   const { user } = useAuth();
+  const [confirmDelete, setConfirmDelete] = useState(null);
   const location = useLocation();
 
   const [categoryFilter, setCategoryFilter] = useState('Все');
@@ -87,15 +88,15 @@ export default function SurveysPage() {
                   <th style={{ width: 90 }}>Категория</th>
                   <th style={{ width: 70 }}>Ответов</th>
                   <th style={{ width: 65 }}>Статус</th>
-                  <th style={{ width: 70 }}>Действие</th>
+                  <th style={{ width: 110 }}>Действие</th>
                 </tr>
               </thead>
               <tbody>
                 {filtered.map(s => (
                   <tr key={s.id}>
                     <td style={{ textAlign: 'center' }}>{s.status === 'active' ? '📋' : '📁'}</td>
-                    <td>
-                      <div style={{ fontWeight: 'bold' }}>{s.title}</div>
+                    <td style={{ maxWidth: 320 }}>
+                      <div style={{ fontWeight: 'bold', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.title}</div>
                       <div style={{ fontSize: 11, color: '#555' }}>{s.desc?.slice(0, 55)}{s.desc?.length > 55 ? '…' : ''}</div>
                     </td>
                     <td><CategoryBadge category={s.category} /></td>
@@ -105,10 +106,29 @@ export default function SurveysPage() {
                         {s.status === 'active' ? '✅ Активен' : '🔒 Закрыт'}
                       </span>
                     </td>
-                    <td>
+                    <td style={{ display: 'flex', gap: 4 }}>
                       <Link to={`/survey/${s.id}`} className="win-btn" style={{ minWidth: 0, fontSize: 12, padding: '2px 8px' }}>
                         Открыть
                       </Link>
+                      {user && s.authorId === user.id && (
+                        confirmDelete === s.id ? (
+                          <>
+                            <button className="win-btn" style={{ fontSize: 11, padding: '2px 6px', color: 'var(--win-error)' }}
+                              onClick={async () => { await deleteSurvey(s.id); setConfirmDelete(null); }}>
+                              ✓
+                            </button>
+                            <button className="win-btn" style={{ fontSize: 11, padding: '2px 6px' }}
+                              onClick={() => setConfirmDelete(null)}>
+                              ✗
+                            </button>
+                          </>
+                        ) : (
+                          <button className="win-btn" style={{ minWidth: 0, fontSize: 12, padding: '2px 8px' }}
+                            onClick={() => setConfirmDelete(s.id)}>
+                            🗑
+                          </button>
+                        )
+                      )}
                     </td>
                   </tr>
                 ))}

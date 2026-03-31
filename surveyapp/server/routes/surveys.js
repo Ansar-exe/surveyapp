@@ -60,7 +60,7 @@ router.post(
   [
     body('title').trim().isLength({ min: 5, max: 120 }).withMessage('Название: от 5 до 120 символов.'),
     body('category').notEmpty().withMessage('Категория обязательна.'),
-    body('questions').isArray({ min: 1 }).withMessage('Добавьте хотя бы один вопрос.'),
+    body('questions').isArray({ min: 5 }).withMessage('Добавьте минимум 5 вопросов.'),
     body('questions.*.text').notEmpty().withMessage('Текст вопроса обязателен.'),
     body('questions.*.type').isIn(['single', 'multiple', 'rating', 'text']).withMessage('Недопустимый тип вопроса.'),
   ],

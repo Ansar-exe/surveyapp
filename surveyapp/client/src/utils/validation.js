@@ -70,8 +70,8 @@ export function validateSurveyForm({ title, questions }) {
   if (!title || !title.trim()) errors.title = 'Введите название опроса.';
   else if (title.trim().length < 5) errors.title = 'Минимум 5 символов.';
 
-  if (!questions || questions.length === 0) {
-    errors.questions = 'Добавьте хотя бы один вопрос.';
+  if (!questions || questions.length < 5) {
+    errors.questions = `Добавьте минимум 5 вопросов (сейчас: ${(questions || []).length}).`;
   }
   return errors;
 }

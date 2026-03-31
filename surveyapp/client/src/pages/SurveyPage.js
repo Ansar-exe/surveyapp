@@ -237,8 +237,23 @@ function ResultsView({ survey, answers }) {
               )}
 
               {q.type === 'text' && (
-                <div className="win-panel-sunken" style={{ fontSize: 12, color: '#555' }}>
-                  📝 Ваш ответ: {answers[qi] || '(без ответа)'}
+                <div>
+                  {Array.isArray(res) && res.length > 0 ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      {res.map((txt, i) => (
+                        <div key={i} className="win-panel-sunken" style={{ fontSize: 12, color: '#333', padding: '6px 10px' }}>
+                          💬 {txt}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div style={{ fontSize: 12, color: '#888' }}>Пока нет текстовых ответов</div>
+                  )}
+                  {answers[qi] && (
+                    <div style={{ fontSize: 11, color: '#555', marginTop: 6 }}>
+                      ✏️ Ваш ответ: <em>{answers[qi]}</em>
+                    </div>
+                  )}
                 </div>
               )}
 

@@ -188,6 +188,9 @@ router.post(
           const idx = Number(ans) - 1;
           if (idx >= 0 && idx < 5) cur[idx] = (cur[idx] || 0) + 1;
           results[qi] = [...cur];
+        } else if (q.type === 'text' && typeof ans === 'string' && ans.trim()) {
+          const cur = results[qi] || [];
+          results[qi] = [...cur, ans.trim()];
         }
       });
 

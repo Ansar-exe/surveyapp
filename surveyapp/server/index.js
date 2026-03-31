@@ -3,7 +3,6 @@ require('dotenv').config();
 
 const express = require('express');
 const cors = require('cors');
-const path = require('path');
 const connectDB = require('./middleware/db');
 
 const authRoutes    = require('./routes/auth');
@@ -50,14 +49,6 @@ app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', time: new Date().toISOString(), version: '1.0.0' });
 });
 
-// ── Serve React build in production ──
-if (process.env.NODE_ENV === 'production') {
-  const buildPath = path.join(__dirname, '../client/build');
-  app.use(express.static(buildPath));
-  app.get('*', (_req, res) => {
-    res.sendFile(path.join(buildPath, 'index.html'));
-  });
-}
 
 // ── 404 handler for unknown API routes ──
 app.use('/api/{*path}', (_req, res) => {

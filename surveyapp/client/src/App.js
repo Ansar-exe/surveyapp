@@ -11,9 +11,17 @@ import RegisterPage from './pages/RegisterPage';
 import { ProfilePage, NotFoundPage } from './pages/OtherPages';
 import './styles/win98.css';
 
+const desktopStyle = {
+  backgroundImage: `url(${process.env.PUBLIC_URL}/bliss.jpg)`,
+  backgroundSize: 'cover',
+  backgroundPosition: 'center',
+  backgroundAttachment: 'fixed',
+  backgroundRepeat: 'no-repeat',
+};
+
 function Layout() {
   return (
-    <div className="win-desktop">
+    <div className="win-desktop" style={desktopStyle}>
       <Routes>
         <Route path="/"           element={<SurveysPage />} />
         <Route path="/survey/:id" element={<SurveyPage />} />

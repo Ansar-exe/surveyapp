@@ -18,4 +18,14 @@ const surveySchema = new mongoose.Schema({
   responses:  { type: Number, default: 0 },
 }, { timestamps: true });
 
+surveySchema.set('toJSON', {
+  virtuals: true,
+  transform: (_doc, ret) => {
+    ret.id = ret._id.toString();
+    delete ret._id;
+    delete ret.__v;
+    return ret;
+  },
+});
+
 module.exports = mongoose.model('Survey', surveySchema);

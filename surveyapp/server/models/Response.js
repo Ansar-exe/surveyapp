@@ -6,4 +6,14 @@ const responseSchema = new mongoose.Schema({
   answers:  { type: mongoose.Schema.Types.Mixed, required: true },
 }, { timestamps: true });
 
+responseSchema.set('toJSON', {
+  virtuals: true,
+  transform: (_doc, ret) => {
+    ret.id = ret._id.toString();
+    delete ret._id;
+    delete ret.__v;
+    return ret;
+  },
+});
+
 module.exports = mongoose.model('Response', responseSchema);

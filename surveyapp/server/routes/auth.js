@@ -16,7 +16,7 @@ function signToken(user) {
 }
 
 function safeUser(user) {
-  return { id: user._id.toString(), username: user.username, email: user.email, createdAt: user.createdAt };
+  return user.toJSON();
 }
 
 // POST /api/auth/register

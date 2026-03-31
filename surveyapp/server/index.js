@@ -4,10 +4,13 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const connectDB = require('./middleware/db');
 
 const authRoutes    = require('./routes/auth');
 const surveyRoutes  = require('./routes/surveys');
 const userRoutes    = require('./routes/users');
+
+connectDB().catch(err => { console.error('Ошибка подключения к MongoDB:', err); process.exit(1); });
 
 const app = express();
 const PORT = process.env.PORT || 5000;

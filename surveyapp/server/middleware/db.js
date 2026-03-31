@@ -1,16 +1,13 @@
-// db.js — JSON file-based database using lowdb v1
-const low = require('lowdb');
-const FileSync = require('lowdb/adapters/FileSync');
-const path = require('path');
+const mongoose = require('mongoose');
 
-const adapter = new FileSync(path.join(__dirname, '../data/db.json'));
-const db = low(adapter);
+async function connectDB() {
+  const uri = process.env.MONGODB_URI;
+  if (!uri) {
+    console.error('MONGODB_URI не задан в .env');
+    process.exit(1);
+  }
+  await mongoose.connect(uri);
+  console.log('MongoDB подключена');
+}
 
-// Set default structure
-db.defaults({
-  users: [],
-  surveys: [],
-  responses: [],
-}).write();
-
-module.exports = db;
+module.exports = connectDB;

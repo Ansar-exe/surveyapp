@@ -81,7 +81,7 @@ export function ProfilePage() {
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                 padding: '4px 0', borderBottom: '1px solid #ddd', fontSize: 13,
               }}>
-                <span>{s.title}</span>
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 320 }}>{s.title}</span>
                 <Link to={`/survey/${s.id}`} className="win-btn"
                   style={{ minWidth: 0, fontSize: 11, padding: '2px 8px' }}>
                   Открыть

@@ -31,10 +31,18 @@ cd ../server && npm install
 
 ### 2. Настроить переменные окружения
 
-```bash
-cd server
-cp .env.example .env
-# Откройте .env и смените JWT_SECRET на свой секретный ключ
+Создать файл `server/.env`:
+
+```env
+MONGODB_URI=mongodb+srv://<user>:<password>@cluster0.mongodb.net/surveyapp
+JWT_SECRET=your_secret_key_here
+PORT=5000
+```
+
+Создать файл `client/.env.local`:
+
+```env
+REACT_APP_API_URL=http://localhost:5000/api
 ```
 
 ### 3. Запустить
@@ -75,9 +83,9 @@ npm start
 | Технология | Назначение |
 |---|---|
 | **Node.js + Express** | REST API сервер |
+| **MongoDB Atlas + Mongoose** | Облачная база данных |
 | **bcryptjs** | Хеширование паролей (cost=12) |
 | **jsonwebtoken** | JWT аутентификация |
-| **lowdb** | JSON файловая база данных |
 | **express-validator** | Серверная валидация |
 
 ---
@@ -108,16 +116,17 @@ surveyapp/
 │           └── validation.js   # Клиентская валидация форм
 │
 ├── server/                     # Node.js бэкенд
-│   ├── data/
-│   │   └── db.json             # База данных (создаётся автоматически)
 │   ├── middleware/
 │   │   ├── auth.js             # JWT middleware (requireAuth, optionalAuth)
-│   │   └── db.js               # Подключение к lowdb
+│   │   └── db.js               # Подключение к MongoDB Atlas
+│   ├── models/
+│   │   ├── User.js             # Mongoose схема пользователя
+│   │   ├── Survey.js           # Mongoose схема опроса
+│   │   └── Response.js         # Mongoose схема ответа
 │   ├── routes/
 │   │   ├── auth.js             # POST /register, POST /login, GET /me
 │   │   ├── surveys.js          # GET/POST/PUT/DELETE /surveys + /respond
 │   │   └── users.js            # GET /me/surveys, GET /me/stats
-│   ├── .env.example            # Шаблон конфига
 │   └── index.js                # Точка входа Express
 │
 ├── .gitignore
@@ -127,31 +136,153 @@ surveyapp/
 
 ---
 
-## 📡 API Эндпоинты
+## 📡 API Документация
+
+Базовый URL: `https://surveyapp-ars0.onrender.com/api`  
+Аутентификация: `Authorization: Bearer <JWT_TOKEN>`
 
 ### Аутентификация
-| Метод | Путь | Описание | Auth |
-|---|---|---|---|
-| `POST` | `/api/auth/register` | Регистрация | — |
-| `POST` | `/api/auth/login` | Вход | — |
-| `GET` | `/api/auth/me` | Текущий пользователь | ✅ |
+
+#### `POST /auth/register` — Регистрация
+
+**Тело запроса:**
+```json
+{
+  "username": "Ansar",
+  "email": "ansar@example.com",
+  "password": "secret123"
+}
+```
+**Валидация:** username 3–30 символов, email корректный, пароль ≥ 6 символов
+
+**Ответ `201`:**
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "user": { "id": "64f...", "username": "Ansar", "email": "ansar@example.com" }
+}
+```
+**Ошибки:** `400` (валидация), `409` (email или username уже занят)
+
+---
+
+#### `POST /auth/login` — Вход
+
+**Тело запроса:**
+```json
+{ "email": "ansar@example.com", "password": "secret123" }
+```
+**Ответ `200`:**
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "user": { "id": "64f...", "username": "Ansar", "email": "ansar@example.com" }
+}
+```
+**Ошибки:** `401` (неверный пароль или пользователь не найден)
+
+---
+
+#### `GET /auth/me` — Текущий пользователь
+
+**Заголовок:** `Authorization: Bearer <token>`  
+**Ответ `200`:** `{ "user": { "id": "...", "username": "...", "email": "..." } }`
+
+---
 
 ### Опросы (полный CRUD)
+
 | Метод | Путь | Описание | Auth |
 |---|---|---|---|
 | `GET` | `/api/surveys` | Список (фильтры, пагинация) | opt |
 | `GET` | `/api/surveys/:id` | Один опрос | opt |
 | `POST` | `/api/surveys` | Создать | ✅ |
-| `PUT` | `/api/surveys/:id` | Обновить (автор) | ✅ |
-| `DELETE` | `/api/surveys/:id` | Удалить (автор) | ✅ |
+| `PUT` | `/api/surveys/:id` | Обновить (только автор) | ✅ |
+| `DELETE` | `/api/surveys/:id` | Удалить (только автор) | ✅ |
 | `POST` | `/api/surveys/:id/respond` | Отправить ответы | opt |
-| `GET` | `/api/surveys/:id/responses` | Все ответы (автор) | ✅ |
+| `GET` | `/api/surveys/:id/responses` | Все ответы (только автор) | ✅ |
+
+#### `GET /surveys` — Список опросов
+
+**Query-параметры:**
+| Параметр | Тип | Описание |
+|---|---|---|
+| `category` | string | Фильтр по категории (Технологии, Образование, ...) |
+| `status` | string | `active` или `closed` |
+| `search` | string | Поиск по названию и описанию |
+| `page` | number | Номер страницы (default: 1) |
+| `limit` | number | Записей на странице (default: 20) |
+
+**Ответ `200`:**
+```json
+{
+  "surveys": [{ "id": "...", "title": "...", "responses": 5, ... }],
+  "total": 42,
+  "page": 1,
+  "pages": 3
+}
+```
+
+---
+
+#### `POST /surveys` — Создать опрос
+
+**Тело запроса:**
+```json
+{
+  "title": "Мой опрос",
+  "desc": "Описание опроса",
+  "category": "Технологии",
+  "questions": [
+    { "type": "single", "text": "Вопрос 1?", "options": ["Да", "Нет"] },
+    { "type": "multiple", "text": "Вопрос 2?", "options": ["A", "B", "C"] },
+    { "type": "rating", "text": "Оцените от 1 до 5" },
+    { "type": "text", "text": "Ваш комментарий" },
+    { "type": "single", "text": "Вопрос 5?", "options": ["Вариант 1", "Вариант 2"] }
+  ]
+}
+```
+
+**Типы вопросов:** `single` (одиночный), `multiple` (множественный), `rating` (1–5), `text` (свободный ответ)  
+**Валидация:** минимум 5 вопросов, название 5–120 символов  
+**Ответ `201`:** `{ "survey": { "id": "...", ... } }`
+
+---
+
+#### `POST /surveys/:id/respond` — Отправить ответы
+
+**Тело запроса:**
+```json
+{
+  "answers": {
+    "0": 1,
+    "1": [0, 2],
+    "2": 4,
+    "3": "Отличный проект!"
+  }
+}
+```
+Формат `answers`: ключ — индекс вопроса (0, 1, 2...), значение — индекс варианта (single), массив индексов (multiple), число 1–5 (rating), строка (text).
+
+**Ответ `200`:** `{ "survey": { ...с обновлёнными результатами... }, "responseId": "..." }`
+
+---
 
 ### Пользователи
+
 | Метод | Путь | Описание | Auth |
 |---|---|---|---|
 | `GET` | `/api/users/me/surveys` | Мои опросы | ✅ |
 | `GET` | `/api/users/me/stats` | Моя статистика | ✅ |
+
+**`GET /users/me/stats` — Ответ:**
+```json
+{
+  "totalSurveys": 3,
+  "totalResponses": 27,
+  "avgResponses": 9
+}
+```
 
 ---
 
@@ -206,16 +337,50 @@ cd ../server && NODE_ENV=production npm start  # раздаёт build + API
 
 ## 🧪 Тестирование API (Postman)
 
-Импортируйте следующие запросы:
+### Тестовый аккаунт (задеплоен)
 
 ```
-POST http://localhost:5000/api/auth/register
-Body: { "username": "user1", "email": "u@test.com", "password": "pass123" }
+Email:    demo@surveyapp.com
+Пароль:   demo1234
+```
 
-POST http://localhost:5000/api/auth/login  
-Body: { "email": "u@test.com", "password": "pass123" }
+### Пример сценария тестирования
 
-GET http://localhost:5000/api/surveys
+**Шаг 1 — Регистрация:**
+```
+POST https://surveyapp-ars0.onrender.com/api/auth/register
+Content-Type: application/json
+
+{ "username": "testuser", "email": "test@example.com", "password": "pass123" }
+```
+
+**Шаг 2 — Получить список опросов:**
+```
+GET https://surveyapp-ars0.onrender.com/api/surveys
+```
+
+**Шаг 3 — Создать опрос (нужен токен из шага 1):**
+```
+POST https://surveyapp-ars0.onrender.com/api/surveys
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "title": "Тест через Postman",
+  "category": "Технологии",
+  "questions": [
+    { "type": "single", "text": "Вопрос 1?", "options": ["Да", "Нет"] },
+    { "type": "rating", "text": "Оцените" },
+    { "type": "text", "text": "Комментарий" },
+    { "type": "single", "text": "Вопрос 4?", "options": ["A", "B"] },
+    { "type": "multiple", "text": "Вопрос 5?", "options": ["X", "Y", "Z"] }
+  ]
+}
+```
+
+**Шаг 4 — Удалить свой опрос:**
+```
+DELETE https://surveyapp-ars0.onrender.com/api/surveys/<id>
 Authorization: Bearer <token>
 ```
 
@@ -224,4 +389,4 @@ Authorization: Bearer <token>
 ## 👤 Автор
 
 Курсовой проект по дисциплине **ПМ04**  
-Платформа: React + Node.js + Express + JWT + bcrypt
+Стек: React · Node.js · Express · MongoDB Atlas · JWT · bcrypt

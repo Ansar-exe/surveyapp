@@ -1,31 +1,31 @@
 import { useState } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useSurveys } from '../context/SurveyContext';
+import { useWindow } from '../context/WindowContext';
 import { Window, StarRating, BarRow, Alert, CategoryBadge, Loader } from '../components/UI';
 
-export default function SurveyPage() {
-  const { id } = useParams();
+export default function SurveyPage({ surveyId, onClose, onMinimize }) {
   const { getSurvey, submitResponse } = useSurveys();
+  const { openWindow } = useWindow();
 
-  const survey = getSurvey(id);
+  const survey = getSurvey(surveyId);
   const [phase, setPhase] = useState('take'); // 'take' | 'submitting' | 'results'
   const [currentQ, setCurrentQ] = useState(0);
   const [answers, setAnswers] = useState({});
 
   if (!survey) {
     return (
-      <Window title="Ошибка — SurveyPro 98" icon="⚠️" statusText="Опрос не найден">
+      <Window title="Ошибка — SurveyPro 98" icon="⚠️" statusText="Опрос не найден" onClose={onClose} onMinimize={onMinimize}>
         <div style={{ padding: 20, textAlign: 'center' }}>
           <div style={{ fontSize: 48, marginBottom: 10 }}>❌</div>
           <div style={{ fontWeight: 'bold', marginBottom: 8 }}>Опрос не найден</div>
-          <div style={{ color: '#555', marginBottom: 16 }}>ID: {id}</div>
-          <Link to="/" className="win-btn win-btn--default">← Вернуться к списку</Link>
+          <div style={{ color: '#555', marginBottom: 16 }}>ID: {surveyId}</div>
+          <button className="win-btn win-btn--default" onClick={() => openWindow('surveys')}>← Вернуться к списку</button>
         </div>
       </Window>
     );
   }
 
-  if (phase === 'results') return <ResultsView survey={survey} answers={answers} />;
+  if (phase === 'results') return <ResultsView survey={survey} answers={answers} onClose={onClose} onMinimize={onMinimize} />;
 
   const q = survey.questions[currentQ];
   const total = survey.questions.length;
@@ -50,7 +50,6 @@ export default function SurveyPage() {
     if (currentQ < total - 1) {
       setCurrentQ(c => c + 1);
     } else {
-      // Submit
       setPhase('submitting');
       await new Promise(r => setTimeout(r, 700));
       submitResponse(survey.id, answers);
@@ -63,16 +62,17 @@ export default function SurveyPage() {
       title={`${survey.title} — SurveyPro 98`}
       icon="📝"
       statusText={`Вопрос ${currentQ + 1} из ${total} · ${survey.responses} участников`}
+      onClose={onClose}
+      onMinimize={onMinimize}
     >
       <div className="win-menubar">
-        <Link to="/" className="win-menubar__item" style={{ textDecoration: 'none' }}>← Назад</Link>
+        <button className="win-menubar__item" onClick={() => openWindow('surveys')}>← Назад</button>
       </div>
       <div style={{ padding: '12px 16px' }}>
         {phase === 'submitting' ? (
           <Loader text="Отправка ответов..." />
         ) : (
           <>
-            {/* Header */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10, flexWrap: 'wrap', gap: 6 }}>
               <div>
                 <div style={{ fontWeight: 'bold', fontSize: 15 }}>{survey.title}</div>
@@ -83,7 +83,6 @@ export default function SurveyPage() {
               </div>
             </div>
 
-            {/* Progress */}
             <div style={{ marginBottom: 12 }}>
               <div style={{ fontSize: 12, color: '#555', marginBottom: 3 }}>
                 Прогресс: {currentQ}/{total}
@@ -93,7 +92,6 @@ export default function SurveyPage() {
               </div>
             </div>
 
-            {/* Question */}
             <fieldset className="win-fieldset">
               <legend>Вопрос {currentQ + 1} из {total}</legend>
               <div style={{ fontWeight: 'bold', fontSize: 14, marginBottom: 12 }}>{q.text}</div>
@@ -154,7 +152,6 @@ export default function SurveyPage() {
               )}
             </fieldset>
 
-            {/* Navigation */}
             <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 10 }}>
               <button
                 className="win-btn"
@@ -177,9 +174,8 @@ export default function SurveyPage() {
   );
 }
 
-// ── Results view ──
-function ResultsView({ survey, answers }) {
-  const navigate = useNavigate();
+function ResultsView({ survey, answers, onClose, onMinimize }) {
+  const { openWindow } = useWindow();
 
   function getAvg(counts) {
     const total = counts.reduce((a, b) => a + b, 0);
@@ -192,9 +188,11 @@ function ResultsView({ survey, answers }) {
       title={`Результаты: ${survey.title}`}
       icon="📊"
       statusText={`${survey.responses.toLocaleString()} участников`}
+      onClose={onClose}
+      onMinimize={onMinimize}
     >
       <div className="win-menubar">
-        <button className="win-menubar__item" onClick={() => navigate('/')}>← Назад к списку</button>
+        <button className="win-menubar__item" onClick={() => openWindow('surveys')}>← Назад к списку</button>
       </div>
       <div style={{ padding: '12px 16px', maxHeight: 520, overflowY: 'auto' }}>
         <Alert type="success">Ваши ответы успешно отправлены! Спасибо за участие.</Alert>
@@ -265,10 +263,10 @@ function ResultsView({ survey, answers }) {
         })}
 
         <div style={{ marginTop: 16, display: 'flex', gap: 8 }}>
-          <button className="win-btn win-btn--default" onClick={() => navigate('/')}>
+          <button className="win-btn win-btn--default" onClick={() => openWindow('surveys')}>
             ← К списку опросов
           </button>
-          <button className="win-btn" onClick={() => navigate('/dashboard')}>
+          <button className="win-btn" onClick={() => openWindow('dashboard')}>
             📊 Дашборд
           </button>
         </div>

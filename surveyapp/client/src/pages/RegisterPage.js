@@ -1,12 +1,12 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useWindow } from '../context/WindowContext';
 import { validateRegisterForm } from '../utils/validation';
 import { Window, FormField, Alert, Loader } from '../components/UI';
 
-export default function RegisterPage() {
+export default function RegisterPage({ onClose, onMinimize }) {
   const { register, loading } = useAuth();
-  const navigate = useNavigate();
+  const { openWindow } = useWindow();
 
   const [form, setForm] = useState({ username: '', email: '', password: '', confirm: '' });
   const [errors, setErrors] = useState({});
@@ -31,20 +31,20 @@ export default function RegisterPage() {
 
     try {
       await register({ username: form.username, email: form.email, password: form.password });
-      navigate('/', { state: { message: `Добро пожаловать, ${form.username}!` } });
+      onClose && onClose();
+      openWindow('surveys');
     } catch (err) {
       setServerError(err.message);
     }
   }
 
-  // Password strength indicator
   const pwLen = form.password.length;
   const pwStrength = pwLen === 0 ? null : pwLen < 6 ? 'weak' : pwLen < 10 ? 'ok' : 'strong';
   const pwLabels = { weak: '⚠ Слабый', ok: '▲ Средний', strong: '✔ Надёжный' };
   const pwColors = { weak: 'var(--win-error)', ok: '#996600', strong: 'var(--win-success)' };
 
   return (
-    <Window draggable title="Регистрация — SurveyPro 98" icon="📝" statusText="Создайте новый аккаунт">
+    <Window title="Регистрация — SurveyPro 98" icon="📝" statusText="Создайте новый аккаунт" onClose={onClose} onMinimize={onMinimize}>
       <div className="win-menubar">
         <button className="win-menubar__item">Файл</button>
         <button className="win-menubar__item">Справка</button>
@@ -142,16 +142,19 @@ export default function RegisterPage() {
             >
               {loading ? '...' : '✔ Зарегистрироваться'}
             </button>
-            <Link to="/" className="win-btn">Отмена</Link>
+            <button type="button" className="win-btn" onClick={onClose}>Отмена</button>
           </div>
         </form>
 
         <div className="win-sep" />
         <div style={{ fontSize: 12, color: '#555', textAlign: 'center' }}>
           Уже есть аккаунт?{' '}
-          <Link to="/login" style={{ color: 'var(--win-title-start)' }}>
+          <button
+            style={{ background: 'none', border: 'none', color: 'var(--win-title-start)', cursor: 'pointer', fontSize: 12, padding: 0 }}
+            onClick={() => openWindow('login')}
+          >
             Войти
-          </Link>
+          </button>
         </div>
       </div>
     </Window>

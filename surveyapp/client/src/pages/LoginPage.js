@@ -1,15 +1,12 @@
 import { useState } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useWindow } from '../context/WindowContext';
 import { validateLoginForm } from '../utils/validation';
 import { Window, FormField, Alert, Loader } from '../components/UI';
 
-export default function LoginPage() {
+export default function LoginPage({ onClose, onMinimize }) {
   const { login, loading } = useAuth();
-  const navigate = useNavigate();
-  const location = useLocation();
-
-  const from = location.state?.from?.pathname || '/';
+  const { openWindow } = useWindow();
 
   const [form, setForm] = useState({ email: '', password: '' });
   const [errors, setErrors] = useState({});
@@ -17,7 +14,6 @@ export default function LoginPage() {
 
   function handleChange(e) {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
-    // Clear field error on change
     if (errors[e.target.name]) {
       setErrors(prev => ({ ...prev, [e.target.name]: null }));
     }
@@ -27,7 +23,6 @@ export default function LoginPage() {
     e.preventDefault();
     setServerError(null);
 
-    // Client-side validation
     const errs = validateLoginForm(form);
     if (Object.keys(errs).length > 0) {
       setErrors(errs);
@@ -36,14 +31,15 @@ export default function LoginPage() {
 
     try {
       await login(form);
-      navigate(from, { replace: true });
+      onClose && onClose();
+      openWindow('surveys');
     } catch (err) {
       setServerError(err.message);
     }
   }
 
   return (
-    <Window draggable title="Вход в систему — SurveyPro 98" icon="🔑" statusText="Введите данные для входа">
+    <Window title="Вход в систему — SurveyPro 98" icon="🔑" statusText="Введите данные для входа" onClose={onClose} onMinimize={onMinimize}>
       <div className="win-menubar">
         <button className="win-menubar__item">Файл</button>
         <button className="win-menubar__item">Справка</button>
@@ -60,10 +56,6 @@ export default function LoginPage() {
         <div className="win-sep" />
 
         {serverError && <Alert type="error">{serverError}</Alert>}
-
-        {location.state?.message && (
-          <Alert type="info">{location.state.message}</Alert>
-        )}
 
         <form onSubmit={handleSubmit} noValidate>
           <fieldset className="win-fieldset">
@@ -106,16 +98,19 @@ export default function LoginPage() {
             >
               {loading ? '...' : '✔ Войти'}
             </button>
-            <Link to="/" className="win-btn">Отмена</Link>
+            <button type="button" className="win-btn" onClick={onClose}>Отмена</button>
           </div>
         </form>
 
         <div className="win-sep" />
         <div style={{ fontSize: 12, color: '#555', textAlign: 'center' }}>
           Нет аккаунта?{' '}
-          <Link to="/register" style={{ color: 'var(--win-title-start)' }}>
+          <button
+            style={{ background: 'none', border: 'none', color: 'var(--win-title-start)', cursor: 'pointer', fontSize: 12, padding: 0 }}
+            onClick={() => openWindow('register')}
+          >
             Зарегистрироваться
-          </Link>
+          </button>
         </div>
       </div>
     </Window>

@@ -1,22 +1,21 @@
 import { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
 import { useSurveys } from '../context/SurveyContext';
 import { useAuth } from '../context/AuthContext';
+import { useWindow } from '../context/WindowContext';
 import { Window, CategoryBadge, Alert, EmptyState, Loader } from '../components/UI';
 
 const CATEGORIES = ['Все', 'Бизнес', 'Технологии', 'Образование', 'Здоровье', 'Развлечения', 'Другое'];
 
-export default function SurveysPage() {
+export default function SurveysPage({ onClose, onMinimize }) {
   const { surveys, fetchSurveys, deleteSurvey, loading, backendUp } = useSurveys();
   const { user } = useAuth();
+  const { openWindow } = useWindow();
   const [confirmDelete, setConfirmDelete] = useState(null);
-  const location = useLocation();
 
   const [categoryFilter, setCategoryFilter] = useState('Все');
   const [statusFilter, setStatusFilter]     = useState('all');
   const [search, setSearch]                 = useState('');
 
-  // Try to load from backend on mount
   useEffect(() => { fetchSurveys(); }, []); // eslint-disable-line
 
   const filtered = surveys.filter(s => {
@@ -31,25 +30,29 @@ export default function SurveysPage() {
       title="Публичные опросы — SurveyPro 98"
       icon="📋"
       statusText={`Найдено: ${filtered.length} из ${surveys.length}${backendUp ? ' · 🟢 сервер' : ' · 📁 локально'}`}
+      onClose={onClose}
+      onMinimize={onMinimize}
     >
       <div className="win-menubar">
         <button className="win-menubar__item">Файл</button>
         <button className="win-menubar__item">Вид</button>
-        {user && <Link to="/create" className="win-menubar__item" style={{ textDecoration: 'none' }}>Создать</Link>}
+        {user && (
+          <button className="win-menubar__item" onClick={() => openWindow('create')}>
+            Создать
+          </button>
+        )}
       </div>
 
       <div className="win-toolbar">
         {user
-          ? <Link to="/create" className="win-btn">📋 Создать опрос</Link>
-          : <Link to="/login" className="win-btn">🔑 Войти для создания</Link>}
+          ? <button className="win-btn" onClick={() => openWindow('create')}>📋 Создать опрос</button>
+          : <button className="win-btn" onClick={() => openWindow('login')}>🔑 Войти для создания</button>}
         <button className="win-btn" onClick={() => { setSearch(''); setCategoryFilter('Все'); setStatusFilter('all'); fetchSurveys(); }}>
           🔄 Обновить
         </button>
       </div>
 
       <div style={{ padding: '8px 12px' }}>
-        {location.state?.message && <Alert type="success">{location.state.message}</Alert>}
-
         <fieldset className="win-fieldset" style={{ marginBottom: 10 }}>
           <legend>Фильтры</legend>
           <div className="win-filters-row" style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
@@ -107,9 +110,13 @@ export default function SurveysPage() {
                       </span>
                     </td>
                     <td style={{ display: 'flex', gap: 4 }}>
-                      <Link to={`/survey/${s.id}`} className="win-btn" style={{ minWidth: 0, fontSize: 12, padding: '2px 8px' }}>
+                      <button
+                        className="win-btn"
+                        style={{ minWidth: 0, fontSize: 12, padding: '2px 8px' }}
+                        onClick={() => openWindow(`survey-${s.id}`, { surveyId: s.id })}
+                      >
                         Открыть
-                      </Link>
+                      </button>
                       {user && s.authorId === user.id && (
                         confirmDelete === s.id ? (
                           <>

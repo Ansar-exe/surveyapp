@@ -34,12 +34,6 @@ body {
 }
 
 /* ── WINDOW ── */
-.win-window--page {
-  width: 100%;
-  max-width: 760px;
-  min-width: 0;
-}
-
 .win-window {
   background: var(--win-face);
   border: 2px solid;
@@ -483,12 +477,11 @@ body {
 
 /* ── DESKTOP ── */
 .win-desktop {
-  min-height: 100vh;
   background: var(--win-bg);
-  padding: 8px 8px calc(var(--taskbar-h) + 10px);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  position: relative;
+  height: calc(100vh - 28px);
+  overflow: hidden;
+  user-select: none;
 }
 
 /* ── TASKBAR ── */
@@ -595,37 +588,18 @@ body {
 
 /* Tablet (max 768px) */
 @media (max-width: 768px) {
-  .win-desktop {
-    padding: 4px 4px calc(var(--taskbar-h) + 10px);
-    align-items: stretch;
-  }
-  .win-window--page {
-    max-width: 100%;
-  }
   .win-bar-label { width: 90px; }
   .win-listview th,
   .win-listview td { padding: 4px 6px; font-size: 12px; }
-  .win-taskbar__btn { min-width: 70px; max-width: 100px; font-size: 11px; }
+  .win-taskbar__btn { min-width: 60px; max-width: 90px; font-size: 11px; }
   .win-taskbar__btn.hide-tablet { display: none; }
   .win-tab { padding: 3px 10px; font-size: 12px; }
 }
 
 /* Mobile (max 480px) */
 @media (max-width: 480px) {
-  .win-desktop-icons { display: none; }
   :root { --taskbar-h: 36px; }
   html { font-size: 13px; }
-
-  .win-desktop {
-    padding: 4px 4px calc(var(--taskbar-h) + 6px);
-    align-items: stretch;
-  }
-
-  /* Windows fill full width */
-  .win-window--page {
-    max-width: 100%;
-    box-shadow: none;
-  }
 
   /* Bigger touch targets for buttons */
   .win-btn {

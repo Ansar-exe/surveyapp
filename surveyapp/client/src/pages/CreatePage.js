@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
 import { useSurveys } from '../context/SurveyContext';
 import { useAuth } from '../context/AuthContext';
+import { useWindow } from '../context/WindowContext';
 import { validateSurveyForm } from '../utils/validation';
 import { Window, Alert, FormField } from '../components/UI';
 
@@ -17,10 +17,10 @@ function emptyQuestion(type = 'single') {
   return { type, text: '', options: type === 'single' || type === 'multiple' ? ['', ''] : [] };
 }
 
-export default function CreatePage() {
+export default function CreatePage({ onClose, onMinimize }) {
   const { createSurvey } = useSurveys();
   const { user } = useAuth();
-  const navigate = useNavigate();
+  const { openWindow } = useWindow();
 
   const [title, setTitle] = useState('');
   const [desc, setDesc] = useState('');
@@ -30,20 +30,19 @@ export default function CreatePage() {
 
   if (!user) {
     return (
-      <Window draggable title="Доступ запрещён — SurveyPro 98" icon="🔒" statusText="Необходима авторизация">
+      <Window title="Доступ запрещён — SurveyPro 98" icon="🔒" statusText="Необходима авторизация" onClose={onClose} onMinimize={onMinimize}>
         <div style={{ padding: 20, textAlign: 'center' }}>
           <div style={{ fontSize: 40, marginBottom: 10 }}>🔒</div>
           <div style={{ fontWeight: 'bold', marginBottom: 8 }}>Необходима авторизация</div>
           <div style={{ color: '#555', marginBottom: 16 }}>Войдите, чтобы создавать опросы</div>
-          <Link to="/login" state={{ from: { pathname: '/create' } }} className="win-btn win-btn--default">
+          <button className="win-btn win-btn--default" onClick={() => openWindow('login')}>
             🔑 Войти
-          </Link>
+          </button>
         </div>
       </Window>
     );
   }
 
-  // ── Question helpers ──
   function addQuestion(type) {
     setQuestions(prev => [...prev, emptyQuestion(type)]);
   }
@@ -74,14 +73,14 @@ export default function CreatePage() {
     ));
   }
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
     const errs = validateSurveyForm({ title, questions });
     if (Object.keys(errs).length > 0) {
       setErrors(errs);
       return;
     }
-    const survey = createSurvey({
+    const survey = await createSurvey({
       title: title.trim(),
       desc: desc.trim() || 'Без описания',
       category,
@@ -92,18 +91,18 @@ export default function CreatePage() {
       })),
     }, user);
 
-    navigate(`/survey/${survey.id}`, { state: { message: 'Опрос успешно создан!' } });
+    onClose && onClose();
+    openWindow(`survey-${survey.id}`, { surveyId: survey.id });
   }
 
   return (
-    <Window draggable title="Создать опрос — SurveyPro 98" icon="➕" statusText={`Вопросов добавлено: ${questions.length}`}>
+    <Window title="Создать опрос — SurveyPro 98" icon="➕" statusText={`Вопросов добавлено: ${questions.length}`} onClose={onClose} onMinimize={onMinimize}>
       <div className="win-menubar">
-        <Link to="/" className="win-menubar__item" style={{ textDecoration: 'none' }}>Отмена</Link>
+        <button className="win-menubar__item" onClick={onClose}>Отмена</button>
       </div>
       <div style={{ padding: '12px 16px', maxHeight: 580, overflowY: 'auto' }}>
         <form onSubmit={handleSubmit} noValidate>
 
-          {/* Basic info */}
           <fieldset className="win-fieldset">
             <legend>Основная информация</legend>
 
@@ -141,7 +140,6 @@ export default function CreatePage() {
             </FormField>
           </fieldset>
 
-          {/* Questions */}
           <fieldset className="win-fieldset">
             <legend>Вопросы</legend>
 
@@ -173,7 +171,7 @@ export default function CreatePage() {
 
           <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
             <button type="submit" className="win-btn win-btn--default">✔ Опубликовать</button>
-            <Link to="/" className="win-btn">✕ Отмена</Link>
+            <button type="button" className="win-btn" onClick={onClose}>✕ Отмена</button>
           </div>
         </form>
       </div>
@@ -181,7 +179,6 @@ export default function CreatePage() {
   );
 }
 
-// ── Question item component ──
 function QuestionItem({ qi, q, total, onUpdateQuestion, onRemove, onAddOption, onRemoveOption, onUpdateOption }) {
   const typeLabel = Q_TYPES.find(t => t.value === q.type)?.label || q.type;
 
@@ -190,7 +187,6 @@ function QuestionItem({ qi, q, total, onUpdateQuestion, onRemove, onAddOption, o
       border: '2px solid', borderColor: 'var(--win-dark) var(--win-light) var(--win-light) var(--win-dark)',
       padding: 8, marginBottom: 8, background: '#fff', position: 'relative',
     }}>
-      {/* Question header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
         <span style={{ fontSize: 11, color: 'var(--win-title-start)', fontWeight: 'bold' }}>
           Вопрос {qi + 1} [{typeLabel}]
@@ -213,7 +209,6 @@ function QuestionItem({ qi, q, total, onUpdateQuestion, onRemove, onAddOption, o
         </div>
       </div>
 
-      {/* Question text */}
       <input
         className="win-input"
         type="text"
@@ -224,7 +219,6 @@ function QuestionItem({ qi, q, total, onUpdateQuestion, onRemove, onAddOption, o
         maxLength={200}
       />
 
-      {/* Options */}
       {(q.type === 'single' || q.type === 'multiple') && (
         <div>
           {q.options.map((opt, oi) => (

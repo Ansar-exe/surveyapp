@@ -1,33 +1,38 @@
 import { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useWindow } from '../context/WindowContext';
 import useDrag from '../hooks/useDrag';
 
 // ── Window chrome wrapper ──
-export function Window({ title, icon = '🖥️', children, statusText, className = '', draggable = false }) {
+export function Window({ title, icon = '🖥️', children, statusText, className = '', onClose, onMinimize }) {
   const { pos, onMouseDown } = useDrag({ x: 0, y: 0 });
-
-  const dragStyle = draggable ? {
-    position: 'relative',
-    transform: `translate(${pos.x}px, ${pos.y}px)`,
-    zIndex: 100,
-  } : {};
 
   return (
     <div
-      className={`win-window win-window--page ${className}`}
-      style={{ margin: '0 auto 32px', ...dragStyle }}
+      className={`win-window ${className}`}
+      style={{ transform: `translate(${pos.x}px, ${pos.y}px)`, width: '100%' }}
     >
       <div
         className="win-titlebar"
-        onMouseDown={draggable ? onMouseDown : undefined}
-        style={{ cursor: draggable ? 'move' : 'default' }}
+        onMouseDown={onMouseDown}
+        style={{ cursor: 'move' }}
       >
         <div className="win-titlebar__text">{icon && <span>{icon}</span>} {title}</div>
         <div className="win-titlebar__controls">
-          <button className="win-tb-btn">_</button>
-          <button className="win-tb-btn">□</button>
-          <button className="win-tb-btn">✕</button>
+          <button
+            className="win-tb-btn"
+            onMouseDown={e => e.stopPropagation()}
+            onClick={onMinimize}
+          >_</button>
+          <button
+            className="win-tb-btn"
+            onMouseDown={e => e.stopPropagation()}
+          >□</button>
+          <button
+            className="win-tb-btn"
+            onMouseDown={e => e.stopPropagation()}
+            onClick={onClose}
+          >✕</button>
         </div>
       </div>
       {children}
@@ -93,51 +98,48 @@ export function Clock() {
 }
 
 // ── Taskbar ──
+const WINDOW_LABELS = {
+  surveys:   '📋 Опросы',
+  dashboard: '📊 Дашборд',
+  create:    '➕ Создать',
+  login:     '🔑 Войти',
+  register:  '📝 Регистрация',
+  profile:   '👤 Профиль',
+};
+
 export function Taskbar() {
   const { user, logout } = useAuth();
-  const location = useLocation();
-
-  const navItems = [
-    { path: '/', label: '📋 Опросы', exact: true },
-    { path: '/dashboard', label: '📊 Дашборд' },
-    ...(user ? [{ path: '/create', label: '➕ Создать' }] : []),
-  ];
+  const { windows, openWindow, focusWindow, minimizeWindow } = useWindow();
 
   return (
     <div className="win-taskbar">
-      <Link to="/" className="win-taskbar__start">
+      <button className="win-taskbar__start" onClick={() => openWindow('surveys')}>
         🪟 <strong>Пуск</strong>
-      </Link>
+      </button>
       <div className="win-taskbar__divider" />
-      {navItems.map(item => (
-        <Link
-          key={item.path}
-          to={item.path}
-          className={`win-taskbar__btn${location.pathname === item.path ? ' win-taskbar__btn--active' : ''}`}
-        >
-          {item.label}
-        </Link>
-      ))}
-      {user && (
-        <>
-          <Link
-            to="/profile"
-            className={`win-taskbar__btn${location.pathname === '/profile' ? ' win-taskbar__btn--active' : ''}`}
+      {windows.map(win => {
+        const label = win.id.startsWith('survey-')
+          ? '📝 Опрос'
+          : (WINDOW_LABELS[win.id] || win.id);
+        const isActive = !win.minimized;
+        return (
+          <button
+            key={win.id}
+            className={`win-taskbar__btn${isActive ? ' win-taskbar__btn--active' : ''}`}
+            onClick={() => win.minimized ? focusWindow(win.id) : minimizeWindow(win.id)}
           >
-            👤 {user.username}
-          </Link>
-          <button className="win-taskbar__btn hide-tablet" onClick={logout} style={{ cursor: 'pointer' }}>
-            🚪 Выйти
+            {label}
           </button>
-        </>
-      )}
-      {!user && (
-        <Link
-          to="/login"
-          className={`win-taskbar__btn${location.pathname === '/login' ? ' win-taskbar__btn--active' : ''}`}
+        );
+      })}
+      {user && (
+        <button
+          className="win-taskbar__btn hide-tablet"
+          onClick={logout}
+          style={{ cursor: 'pointer', marginLeft: 'auto' }}
         >
-          🔑 Войти
-        </Link>
+          🚪 Выйти
+        </button>
       )}
       <Clock />
     </div>

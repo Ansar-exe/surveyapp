@@ -1,21 +1,21 @@
-import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useSurveys } from '../context/SurveyContext';
+import { useWindow } from '../context/WindowContext';
 import { Window } from '../components/UI';
 
 // ── Profile page ──
-export function ProfilePage() {
+export function ProfilePage({ onClose, onMinimize }) {
   const { user, logout } = useAuth();
   const { surveys } = useSurveys();
-  const navigate = useNavigate();
+  const { openWindow } = useWindow();
 
   if (!user) {
     return (
-      <Window title="Профиль — SurveyPro 98" icon="👤" statusText="">
+      <Window title="Профиль — SurveyPro 98" icon="👤" statusText="" onClose={onClose} onMinimize={onMinimize}>
         <div style={{ padding: 20, textAlign: 'center' }}>
           <div style={{ fontSize: 40, marginBottom: 10 }}>🔒</div>
           <div style={{ marginBottom: 12 }}>Войдите, чтобы просмотреть профиль</div>
-          <Link to="/login" className="win-btn win-btn--default">🔑 Войти</Link>
+          <button className="win-btn win-btn--default" onClick={() => openWindow('login')}>🔑 Войти</button>
         </div>
       </Window>
     );
@@ -26,17 +26,17 @@ export function ProfilePage() {
 
   function handleLogout() {
     logout();
-    navigate('/');
+    onClose && onClose();
+    openWindow('surveys');
   }
 
   return (
-    <Window title={`Профиль: ${user.username} — SurveyPro 98`} icon="👤" statusText={`ID: ${user.id}`}>
+    <Window title={`Профиль: ${user.username} — SurveyPro 98`} icon="👤" statusText={`ID: ${user.id}`} onClose={onClose} onMinimize={onMinimize}>
       <div className="win-menubar">
-        <Link to="/" className="win-menubar__item" style={{ textDecoration: 'none' }}>Главная</Link>
+        <button className="win-menubar__item" onClick={() => openWindow('surveys')}>Главная</button>
         <button className="win-menubar__item" onClick={handleLogout}>Выход</button>
       </div>
       <div style={{ padding: 16 }}>
-        {/* Avatar & info */}
         <div style={{ display: 'flex', gap: 16, alignItems: 'center', marginBottom: 16 }}>
           <div className="win-panel-sunken" style={{
             width: 64, height: 64, display: 'flex', alignItems: 'center',
@@ -55,7 +55,6 @@ export function ProfilePage() {
 
         <div className="win-sep" />
 
-        {/* Stats */}
         <fieldset className="win-fieldset">
           <legend>Статистика</legend>
           <table style={{ width: '100%', fontSize: 13, borderCollapse: 'collapse' }}>
@@ -72,7 +71,6 @@ export function ProfilePage() {
           </table>
         </fieldset>
 
-        {/* My surveys */}
         {mine.length > 0 && (
           <fieldset className="win-fieldset">
             <legend>Мои опросы</legend>
@@ -82,17 +80,20 @@ export function ProfilePage() {
                 padding: '4px 0', borderBottom: '1px solid #ddd', fontSize: 13,
               }}>
                 <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 320 }}>{s.title}</span>
-                <Link to={`/survey/${s.id}`} className="win-btn"
-                  style={{ minWidth: 0, fontSize: 11, padding: '2px 8px' }}>
+                <button
+                  className="win-btn"
+                  style={{ minWidth: 0, fontSize: 11, padding: '2px 8px' }}
+                  onClick={() => openWindow(`survey-${s.id}`, { surveyId: s.id })}
+                >
                   Открыть
-                </Link>
+                </button>
               </div>
             ))}
           </fieldset>
         )}
 
         <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-          <Link to="/create" className="win-btn win-btn--default">➕ Создать опрос</Link>
+          <button className="win-btn win-btn--default" onClick={() => openWindow('create')}>➕ Создать опрос</button>
           <button className="win-btn win-btn--danger" onClick={handleLogout}>
             🚪 Выйти
           </button>
@@ -102,10 +103,11 @@ export function ProfilePage() {
   );
 }
 
-// ── 404 Not Found page ──
-export function NotFoundPage() {
+// ── 404 Not Found page (kept for compatibility but not used in window mode) ──
+export function NotFoundPage({ onClose, onMinimize }) {
+  const { openWindow } = useWindow();
   return (
-    <Window title="404 — Страница не найдена" icon="❌" statusText="Ошибка 404">
+    <Window title="404 — Страница не найдена" icon="❌" statusText="Ошибка 404" onClose={onClose} onMinimize={onMinimize}>
       <div style={{ padding: 30, textAlign: 'center' }}>
         <div style={{ fontSize: 72, fontWeight: 'bold', color: 'var(--win-title-start)', fontFamily: "'VT323', monospace", lineHeight: 1 }}>
           404
@@ -116,12 +118,9 @@ export function NotFoundPage() {
         <div style={{ color: '#555', marginBottom: 20, fontSize: 13 }}>
           Запрошенная страница не существует или была удалена.
         </div>
-        <div style={{ marginBottom: 16 }}>
-          <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'%3E%3Ctext y='48' font-size='48'%3E🖥️%3C/text%3E%3C/svg%3E" alt="" width={64} />
-        </div>
         <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
-          <Link to="/" className="win-btn win-btn--default">🏠 На главную</Link>
-          <Link to="/dashboard" className="win-btn">📊 Дашборд</Link>
+          <button className="win-btn win-btn--default" onClick={() => openWindow('surveys')}>🏠 На главную</button>
+          <button className="win-btn" onClick={() => openWindow('dashboard')}>📊 Дашборд</button>
         </div>
       </div>
     </Window>

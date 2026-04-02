@@ -1,19 +1,19 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
 import { useSurveys } from '../context/SurveyContext';
 import { useAuth } from '../context/AuthContext';
+import { useWindow } from '../context/WindowContext';
 import { Window, Tabs, CategoryBadge, BarRow, EmptyState } from '../components/UI';
 
-export default function DashboardPage() {
+export default function DashboardPage({ onClose, onMinimize }) {
   const { surveys, deleteSurvey } = useSurveys();
   const { user } = useAuth();
+  const { openWindow } = useWindow();
   const [activeTab, setActiveTab] = useState('overview');
   const [confirmDelete, setConfirmDelete] = useState(null);
 
   const totalResponses = surveys.reduce((s, sv) => s + sv.responses, 0);
   const activeCount = surveys.filter(s => s.status === 'active').length;
 
-  // Activity mock data
   const days = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
   const activity = [45, 78, 62, 91, 55, 30, 22];
   const maxAct = Math.max(...activity);
@@ -24,7 +24,6 @@ export default function DashboardPage() {
       label: '📊 Обзор',
       content: (
         <div>
-          {/* Stats */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px,1fr))', gap: 8, marginBottom: 14 }}>
             {[
               { label: 'Опросов', value: surveys.length, icon: '📋' },
@@ -40,7 +39,6 @@ export default function DashboardPage() {
             ))}
           </div>
 
-          {/* Activity */}
           <fieldset className="win-fieldset">
             <legend>Активность за 7 дней</legend>
             {activity.map((v, i) => (
@@ -48,7 +46,6 @@ export default function DashboardPage() {
             ))}
           </fieldset>
 
-          {/* By category */}
           <fieldset className="win-fieldset">
             <legend>Распределение по категориям</legend>
             {(() => {
@@ -93,10 +90,11 @@ export default function DashboardPage() {
                     </td>
                     <td>
                       <div style={{ display: 'flex', gap: 3 }}>
-                        <Link to={`/survey/${s.id}`} className="win-btn"
-                          style={{ minWidth: 0, fontSize: 11, padding: '2px 5px' }}>
+                        <button className="win-btn"
+                          style={{ minWidth: 0, fontSize: 11, padding: '2px 5px' }}
+                          onClick={() => openWindow(`survey-${s.id}`, { surveyId: s.id })}>
                           📋
-                        </Link>
+                        </button>
                         {user && (
                           <button className="win-btn win-btn--danger"
                             style={{ minWidth: 0, fontSize: 11, padding: '2px 5px' }}
@@ -119,7 +117,12 @@ export default function DashboardPage() {
       content: (() => {
         const mine = surveys.filter(s => s.authorId === user.id);
         return mine.length === 0 ? (
-          <EmptyState icon="📝" text={<>Вы ещё не создавали опросов. <Link to="/create">Создать →</Link></>} />
+          <EmptyState icon="📝" text={
+            <span>Вы ещё не создавали опросов.{' '}
+              <button style={{ background: 'none', border: 'none', color: 'var(--win-title-start)', cursor: 'pointer', padding: 0 }}
+                onClick={() => openWindow('create')}>Создать →</button>
+            </span>
+          } />
         ) : (
           <table className="win-listview">
             <thead>
@@ -136,10 +139,11 @@ export default function DashboardPage() {
                   <td>{s.responses.toLocaleString()}</td>
                   <td>
                     <div style={{ display: 'flex', gap: 3 }}>
-                      <Link to={`/survey/${s.id}`} className="win-btn"
-                        style={{ minWidth: 0, fontSize: 11, padding: '2px 6px' }}>
+                      <button className="win-btn"
+                        style={{ minWidth: 0, fontSize: 11, padding: '2px 6px' }}
+                        onClick={() => openWindow(`survey-${s.id}`, { surveyId: s.id })}>
                         Открыть
-                      </Link>
+                      </button>
                       <button className="win-btn win-btn--danger"
                         style={{ minWidth: 0, fontSize: 11, padding: '2px 6px' }}
                         onClick={() => setConfirmDelete(s.id)}
@@ -160,22 +164,23 @@ export default function DashboardPage() {
       title="Дашборд — SurveyPro 98"
       icon="📊"
       statusText={`Опросов: ${surveys.length} · Ответов: ${totalResponses.toLocaleString()}`}
+      onClose={onClose}
+      onMinimize={onMinimize}
     >
       <div className="win-menubar">
-        <Link to="/" className="win-menubar__item" style={{ textDecoration: 'none' }}>Опросы</Link>
+        <button className="win-menubar__item" onClick={() => openWindow('surveys')}>Опросы</button>
         {user && (
-          <Link to="/create" className="win-menubar__item" style={{ textDecoration: 'none' }}>Создать</Link>
+          <button className="win-menubar__item" onClick={() => openWindow('create')}>Создать</button>
         )}
       </div>
       <div style={{ padding: '8px 12px' }}>
         <Tabs tabs={tabs} active={activeTab} onChange={setActiveTab} />
       </div>
 
-      {/* Delete confirm dialog */}
       {confirmDelete && (
         <div style={{
           position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999,
         }}>
           <div className="win-window" style={{ width: 320 }}>
             <div className="win-titlebar">

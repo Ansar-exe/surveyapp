@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { SurveyProvider } from './context/SurveyContext';
+import { WindowProvider, useWindow } from './context/WindowContext';
 import { Taskbar } from './components/UI';
 import BootScreen from './components/BootScreen';
 import BSOD from './components/BSOD';
@@ -12,7 +12,7 @@ import CreatePage from './pages/CreatePage';
 import DashboardPage from './pages/DashboardPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
-import { ProfilePage, NotFoundPage } from './pages/OtherPages';
+import { ProfilePage } from './pages/OtherPages';
 import './styles/win98.css';
 
 const desktopStyle = {
@@ -23,50 +23,83 @@ const desktopStyle = {
   backgroundRepeat: 'no-repeat',
 };
 
+const WINDOW_REGISTRY = {
+  surveys:   { Component: SurveysPage },
+  dashboard: { Component: DashboardPage },
+  create:    { Component: CreatePage },
+  login:     { Component: LoginPage },
+  register:  { Component: RegisterPage },
+  profile:   { Component: ProfilePage },
+  survey:    { Component: SurveyPage },
+};
+
 function DesktopIcons() {
-  const navigate = useNavigate();
+  const { openWindow } = useWindow();
   const icons = [
-    { icon: '📋', label: 'Опросы', path: '/' },
-    { icon: '📊', label: 'Дашборд', path: '/dashboard' },
-    { icon: '➕', label: 'Создать опрос', path: '/create' },
-    { icon: '👤', label: 'Профиль', path: '/profile' },
-    { icon: '🔑', label: 'Войти', path: '/login' },
+    { icon: '📋', label: 'Опросы',        id: 'surveys' },
+    { icon: '📊', label: 'Дашборд',       id: 'dashboard' },
+    { icon: '➕', label: 'Создать опрос', id: 'create' },
+    { icon: '👤', label: 'Профиль',       id: 'profile' },
+    { icon: '🔑', label: 'Войти',         id: 'login' },
   ];
 
   return (
     <div style={{
       position: 'fixed', top: 8, left: 8,
       display: 'flex', flexDirection: 'column', gap: 4,
-      zIndex: 10,
+      zIndex: 5,
     }}>
       {icons.map(item => (
         <DesktopIcon
-          key={item.path}
+          key={item.id}
           icon={item.icon}
           label={item.label}
-          onClick={() => navigate(item.path)}
+          onClick={() => openWindow(item.id)}
         />
       ))}
     </div>
   );
 }
 
-function Layout({ onBsod }) {
+function Desktop() {
+  const { windows, focusWindow, closeWindow, minimizeWindow } = useWindow();
+
   return (
-    <div className="win-desktop" style={desktopStyle}>
+    <div className="win-desktop" style={{
+      ...desktopStyle,
+      position: 'relative',
+      height: 'calc(100vh - 28px)',
+      overflow: 'hidden',
+    }}>
       <DesktopIcons />
-      <div style={{ width: '100%', paddingLeft: 80 }}>
-        <Routes>
-          <Route path="/"           element={<SurveysPage />} />
-          <Route path="/survey/:id" element={<SurveyPage />} />
-          <Route path="/create"     element={<CreatePage />} />
-          <Route path="/dashboard"  element={<DashboardPage />} />
-          <Route path="/login"      element={<LoginPage />} />
-          <Route path="/register"   element={<RegisterPage />} />
-          <Route path="/profile"    element={<ProfilePage />} />
-          <Route path="*"           element={<NotFoundPage />} />
-        </Routes>
-      </div>
+      {windows.map(win => {
+        const registryKey = win.id.startsWith('survey-') ? 'survey' : win.id;
+        const reg = WINDOW_REGISTRY[registryKey];
+        if (!reg) return null;
+        const { Component } = reg;
+        return (
+          <div
+            key={win.id}
+            style={{
+              display: win.minimized ? 'none' : 'block',
+              position: 'absolute',
+              left: win.spawnX,
+              top: win.spawnY,
+              zIndex: win.zIndex,
+              width: 780,
+              maxWidth: 'calc(100vw - 90px)',
+            }}
+            onMouseDown={() => focusWindow(win.id)}
+          >
+            <Component
+              {...win.props}
+              winId={win.id}
+              onClose={() => closeWindow(win.id)}
+              onMinimize={() => minimizeWindow(win.id)}
+            />
+          </div>
+        );
+      })}
       <Taskbar />
     </div>
   );
@@ -81,7 +114,6 @@ export default function App() {
     setBooted(true);
   }
 
-  // Listen for critical server errors to trigger BSOD
   useEffect(() => {
     function handler(e) {
       if (e.detail?.critical) setBsod(true);
@@ -100,12 +132,12 @@ export default function App() {
   );
 
   return (
-    <BrowserRouter>
-      <AuthProvider>
-        <SurveyProvider>
-          <Layout />
-        </SurveyProvider>
-      </AuthProvider>
-    </BrowserRouter>
+    <AuthProvider>
+      <SurveyProvider>
+        <WindowProvider>
+          <Desktop />
+        </WindowProvider>
+      </SurveyProvider>
+    </AuthProvider>
   );
 }

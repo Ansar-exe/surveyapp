@@ -52,7 +52,7 @@ export default function SurveysPage() {
 
         <fieldset className="win-fieldset" style={{ marginBottom: 10 }}>
           <legend>Фильтры</legend>
-          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
+          <div className="win-filters-row" style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <label style={{ fontWeight: 'bold' }}>Поиск:</label>
               <input className="win-input" style={{ width: 180 }} type="text"
@@ -85,9 +85,9 @@ export default function SurveysPage() {
                 <tr>
                   <th style={{ width: 24 }}></th>
                   <th>Название</th>
-                  <th style={{ width: 90 }}>Категория</th>
+                  <th className="col-category" style={{ width: 90 }}>Категория</th>
                   <th style={{ width: 70 }}>Ответов</th>
-                  <th style={{ width: 65 }}>Статус</th>
+                  <th className="col-status" style={{ width: 65 }}>Статус</th>
                   <th style={{ width: 110 }}>Действие</th>
                 </tr>
               </thead>
@@ -99,9 +99,9 @@ export default function SurveysPage() {
                       <div style={{ fontWeight: 'bold', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.title}</div>
                       <div style={{ fontSize: 11, color: '#555' }}>{s.desc?.slice(0, 55)}{s.desc?.length > 55 ? '…' : ''}</div>
                     </td>
-                    <td><CategoryBadge category={s.category} /></td>
+                    <td className="col-category"><CategoryBadge category={s.category} /></td>
                     <td>{(s.responses || 0).toLocaleString()}</td>
-                    <td>
+                    <td className="col-status">
                       <span style={{ fontSize: 11, fontWeight: 'bold', color: s.status === 'active' ? 'var(--win-success)' : 'var(--win-disabled)' }}>
                         {s.status === 'active' ? '✅ Активен' : '🔒 Закрыт'}
                       </span>

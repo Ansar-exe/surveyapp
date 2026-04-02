@@ -580,6 +580,17 @@ body {
   line-height: 1;
 }
 
+/* ── DESKTOP ICONS ── */
+.win-desktop-icons {
+  position: fixed;
+  top: 8px;
+  left: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  z-index: 10;
+}
+
 /* ── RESPONSIVE ── */
 
 /* Tablet (max 768px) */
@@ -601,6 +612,7 @@ body {
 
 /* Mobile (max 480px) */
 @media (max-width: 480px) {
+  .win-desktop-icons { display: none; }
   :root { --taskbar-h: 36px; }
   html { font-size: 13px; }
 

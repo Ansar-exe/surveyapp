@@ -1,12 +1,28 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import useDrag from '../hooks/useDrag';
 
 // ── Window chrome wrapper ──
-export function Window({ title, icon = '🖥️', children, statusText, className = '' }) {
+export function Window({ title, icon = '🖥️', children, statusText, className = '', draggable = false }) {
+  const { pos, onMouseDown } = useDrag({ x: 0, y: 0 });
+
+  const dragStyle = draggable ? {
+    position: 'relative',
+    transform: `translate(${pos.x}px, ${pos.y}px)`,
+    zIndex: 100,
+  } : {};
+
   return (
-    <div className={`win-window win-window--page ${className}`} style={{ margin: '0 auto 32px' }}>
-      <div className="win-titlebar">
+    <div
+      className={`win-window win-window--page ${className}`}
+      style={{ margin: '0 auto 32px', ...dragStyle }}
+    >
+      <div
+        className="win-titlebar"
+        onMouseDown={draggable ? onMouseDown : undefined}
+        style={{ cursor: draggable ? 'move' : 'default' }}
+      >
         <div className="win-titlebar__text">{icon && <span>{icon}</span>} {title}</div>
         <div className="win-titlebar__controls">
           <button className="win-tb-btn">_</button>

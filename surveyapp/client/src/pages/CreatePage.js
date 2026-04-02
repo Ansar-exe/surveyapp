@@ -30,7 +30,7 @@ export default function CreatePage() {
 
   if (!user) {
     return (
-      <Window title="Доступ запрещён — SurveyPro 98" icon="🔒" statusText="Необходима авторизация">
+      <Window draggable title="Доступ запрещён — SurveyPro 98" icon="🔒" statusText="Необходима авторизация">
         <div style={{ padding: 20, textAlign: 'center' }}>
           <div style={{ fontSize: 40, marginBottom: 10 }}>🔒</div>
           <div style={{ fontWeight: 'bold', marginBottom: 8 }}>Необходима авторизация</div>
@@ -96,7 +96,7 @@ export default function CreatePage() {
   }
 
   return (
-    <Window title="Создать опрос — SurveyPro 98" icon="➕" statusText={`Вопросов добавлено: ${questions.length}`}>
+    <Window draggable title="Создать опрос — SurveyPro 98" icon="➕" statusText={`Вопросов добавлено: ${questions.length}`}>
       <div className="win-menubar">
         <Link to="/" className="win-menubar__item" style={{ textDecoration: 'none' }}>Отмена</Link>
       </div>

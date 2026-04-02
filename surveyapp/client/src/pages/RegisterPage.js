@@ -44,7 +44,7 @@ export default function RegisterPage() {
   const pwColors = { weak: 'var(--win-error)', ok: '#996600', strong: 'var(--win-success)' };
 
   return (
-    <Window title="Регистрация — SurveyPro 98" icon="📝" statusText="Создайте новый аккаунт">
+    <Window draggable title="Регистрация — SurveyPro 98" icon="📝" statusText="Создайте новый аккаунт">
       <div className="win-menubar">
         <button className="win-menubar__item">Файл</button>
         <button className="win-menubar__item">Справка</button>

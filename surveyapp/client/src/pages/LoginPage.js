@@ -43,7 +43,7 @@ export default function LoginPage() {
   }
 
   return (
-    <Window title="Вход в систему — SurveyPro 98" icon="🔑" statusText="Введите данные для входа">
+    <Window draggable title="Вход в систему — SurveyPro 98" icon="🔑" statusText="Введите данные для входа">
       <div className="win-menubar">
         <button className="win-menubar__item">Файл</button>
         <button className="win-menubar__item">Справка</button>

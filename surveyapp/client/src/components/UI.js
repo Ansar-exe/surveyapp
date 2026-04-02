@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext';
 // ── Window chrome wrapper ──
 export function Window({ title, icon = '🖥️', children, statusText, className = '' }) {
   return (
-    <div className={`win-window ${className}`} style={{ width: '100%', maxWidth: 760, margin: '0 auto 32px' }}>
+    <div className={`win-window ${className}`} style={{ width: '100%', maxWidth: 760, margin: '0 auto 32px', minWidth: 0 }}>
       <div className="win-titlebar">
         <div className="win-titlebar__text">{icon && <span>{icon}</span>} {title}</div>
         <div className="win-titlebar__controls">
@@ -110,7 +110,7 @@ export function Taskbar() {
           >
             👤 {user.username}
           </Link>
-          <button className="win-taskbar__btn" onClick={logout} style={{ cursor: 'pointer' }}>
+          <button className="win-taskbar__btn hide-tablet" onClick={logout} style={{ cursor: 'pointer' }}>
             🚪 Выйти
           </button>
         </>

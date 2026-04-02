@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext';
 // ── Window chrome wrapper ──
 export function Window({ title, icon = '🖥️', children, statusText, className = '' }) {
   return (
-    <div className={`win-window ${className}`} style={{ width: '100%', maxWidth: 760, margin: '0 auto 32px', minWidth: 0 }}>
+    <div className={`win-window win-window--page ${className}`} style={{ margin: '0 auto 32px' }}>
       <div className="win-titlebar">
         <div className="win-titlebar__text">{icon && <span>{icon}</span>} {title}</div>
         <div className="win-titlebar__controls">

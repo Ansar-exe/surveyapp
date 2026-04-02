@@ -34,6 +34,12 @@ body {
 }
 
 /* ── WINDOW ── */
+.win-window--page {
+  width: 100%;
+  max-width: 760px;
+  min-width: 0;
+}
+
 .win-window {
   background: var(--win-face);
   border: 2px solid;
@@ -579,15 +585,11 @@ body {
 /* Tablet (max 768px) */
 @media (max-width: 768px) {
   .win-desktop {
-    padding: 6px 6px calc(var(--taskbar-h) + 10px);
+    padding: 4px 4px calc(var(--taskbar-h) + 10px);
     align-items: stretch;
   }
-  .win-window {
-    width: 100% !important;
-    max-width: 100% !important;
-    min-width: 0 !important;
-    margin-left: 0 !important;
-    margin-right: 0 !important;
+  .win-window--page {
+    max-width: 100%;
   }
   .win-bar-label { width: 90px; }
   .win-listview th,
@@ -608,9 +610,8 @@ body {
   }
 
   /* Windows fill full width */
-  .win-window {
-    width: 100% !important;
-    max-width: 100% !important;
+  .win-window--page {
+    max-width: 100%;
     box-shadow: none;
   }
 

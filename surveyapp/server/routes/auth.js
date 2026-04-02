@@ -3,20 +3,21 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { body, validationResult } = require('express-validator');
-const User = require('../models/User');
+const { prisma } = require('../middleware/db');
 
 const router = express.Router();
 
 function signToken(user) {
   return jwt.sign(
-    { id: user._id.toString(), username: user.username, email: user.email },
+    { id: user.id, username: user.username, email: user.email },
     process.env.JWT_SECRET,
     { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
   );
 }
 
 function safeUser(user) {
-  return user.toJSON();
+  const { passwordHash, ...rest } = user;
+  return rest;
 }
 
 // POST /api/auth/register
@@ -40,17 +41,22 @@ router.post(
     try {
       const { username, email, password } = req.body;
 
-      const existingEmail = await User.findOne({ email: email.toLowerCase() });
+      const existingEmail = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
       if (existingEmail) {
         return res.status(409).json({ error: 'Пользователь с таким email уже существует.', fields: { email: 'Email занят.' } });
       }
-      const existingUsername = await User.findOne({ username: { $regex: new RegExp(`^${username}$`, 'i') } });
+
+      const existingUsername = await prisma.user.findFirst({
+        where: { username: { equals: username, mode: 'insensitive' } },
+      });
       if (existingUsername) {
         return res.status(409).json({ error: 'Это имя пользователя уже занято.', fields: { username: 'Имя занято.' } });
       }
 
       const passwordHash = await bcrypt.hash(password, 12);
-      const user = await User.create({ username: username.trim(), email: email.trim().toLowerCase(), passwordHash });
+      const user = await prisma.user.create({
+        data: { username: username.trim(), email: email.trim().toLowerCase(), passwordHash },
+      });
 
       const token = signToken(user);
       return res.status(201).json({ token, user: safeUser(user) });
@@ -80,7 +86,7 @@ router.post(
     try {
       const { email, password } = req.body;
 
-      const user = await User.findOne({ email: email.trim().toLowerCase() });
+      const user = await prisma.user.findUnique({ where: { email: email.trim().toLowerCase() } });
       if (!user) {
         return res.status(401).json({ error: 'Пользователь с таким email не найден.', fields: { email: 'Не найден.' } });
       }
@@ -109,7 +115,7 @@ router.get('/me', async (req, res) => {
     const token = header.split(' ')[1];
     const payload = jwt.verify(token, process.env.JWT_SECRET);
 
-    const user = await User.findById(payload.id);
+    const user = await prisma.user.findUnique({ where: { id: payload.id } });
     if (!user) return res.status(404).json({ error: 'Пользователь не найден.' });
 
     return res.json({ user: safeUser(user) });

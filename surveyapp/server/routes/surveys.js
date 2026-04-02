@@ -2,8 +2,7 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
 const { requireAuth, optionalAuth } = require('../middleware/auth');
-const Survey = require('../models/Survey');
-const Response = require('../models/Response');
+const { prisma } = require('../middleware/db');
 
 const router = express.Router();
 
@@ -19,21 +18,23 @@ router.get('/', optionalAuth, async (req, res) => {
   try {
     const { category, status, search, page = 1, limit = 20 } = req.query;
 
-    const filter = {};
-    if (category && category !== 'Все') filter.category = category;
-    if (status && status !== 'all') filter.status = status;
+    const where = {};
+    if (category && category !== 'Все') where.category = category;
+    if (status && status !== 'all') where.status = status;
     if (search) {
-      filter.$or = [
-        { title: { $regex: search, $options: 'i' } },
-        { desc:  { $regex: search, $options: 'i' } },
+      where.OR = [
+        { title: { contains: search, mode: 'insensitive' } },
+        { desc:  { contains: search, mode: 'insensitive' } },
       ];
     }
 
-    const total = await Survey.countDocuments(filter);
-    const surveys = await Survey.find(filter)
-      .sort({ createdAt: -1 })
-      .skip((Number(page) - 1) * Number(limit))
-      .limit(Number(limit));
+    const total = await prisma.survey.count({ where });
+    const surveys = await prisma.survey.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      skip: (Number(page) - 1) * Number(limit),
+      take: Number(limit),
+    });
 
     return res.json({ surveys, total, page: Number(page), pages: Math.ceil(total / Number(limit)) });
   } catch (err) {
@@ -45,7 +46,7 @@ router.get('/', optionalAuth, async (req, res) => {
 // GET /api/surveys/:id — single survey
 router.get('/:id', optionalAuth, async (req, res) => {
   try {
-    const survey = await Survey.findById(req.params.id);
+    const survey = await prisma.survey.findUnique({ where: { id: req.params.id } });
     if (!survey) return res.status(404).json({ error: 'Опрос не найден.' });
     return res.json({ survey });
   } catch (err) {
@@ -71,17 +72,19 @@ router.post(
     try {
       const { title, desc, category, questions } = req.body;
 
-      const survey = await Survey.create({
-        title: title.trim(),
-        desc: (desc || '').trim(),
-        category,
-        authorId: req.user.id,
-        authorName: req.user.username,
-        questions: questions.map(q => ({
-          type: q.type,
-          text: q.text.trim(),
-          options: (q.options || []).filter(Boolean).map(o => o.trim()),
-        })),
+      const survey = await prisma.survey.create({
+        data: {
+          title: title.trim(),
+          desc: (desc || '').trim(),
+          category,
+          authorId: req.user.id,
+          authorName: req.user.username,
+          questions: questions.map(q => ({
+            type: q.type,
+            text: q.text.trim(),
+            options: (q.options || []).filter(Boolean).map(o => o.trim()),
+          })),
+        },
       });
 
       return res.status(201).json({ survey });
@@ -105,17 +108,18 @@ router.put(
     if (!errors.isEmpty()) return validationError(res, errors);
 
     try {
-      const survey = await Survey.findById(req.params.id);
+      const survey = await prisma.survey.findUnique({ where: { id: req.params.id } });
       if (!survey) return res.status(404).json({ error: 'Опрос не найден.' });
-      if (survey.authorId.toString() !== req.user.id) {
+      if (survey.authorId !== req.user.id) {
         return res.status(403).json({ error: 'Нет прав для редактирования этого опроса.' });
       }
 
       const allowed = ['title', 'desc', 'category', 'status', 'questions'];
-      allowed.forEach(key => { if (req.body[key] !== undefined) survey[key] = req.body[key]; });
-      await survey.save();
+      const data = {};
+      allowed.forEach(key => { if (req.body[key] !== undefined) data[key] = req.body[key]; });
 
-      return res.json({ survey });
+      const updated = await prisma.survey.update({ where: { id: req.params.id }, data });
+      return res.json({ survey: updated });
     } catch (err) {
       console.error(err);
       return res.status(500).json({ error: 'Ошибка сервера.' });
@@ -126,15 +130,13 @@ router.put(
 // DELETE /api/surveys/:id — delete survey (owner only)
 router.delete('/:id', requireAuth, async (req, res) => {
   try {
-    const survey = await Survey.findById(req.params.id);
+    const survey = await prisma.survey.findUnique({ where: { id: req.params.id } });
     if (!survey) return res.status(404).json({ error: 'Опрос не найден.' });
-    if (survey.authorId.toString() !== req.user.id) {
+    if (survey.authorId !== req.user.id) {
       return res.status(403).json({ error: 'Нет прав для удаления этого опроса.' });
     }
 
-    await Survey.findByIdAndDelete(req.params.id);
-    await Response.deleteMany({ surveyId: req.params.id });
-
+    await prisma.survey.delete({ where: { id: req.params.id } });
     return res.json({ message: 'Опрос удалён.' });
   } catch (err) {
     console.error(err);
@@ -152,7 +154,7 @@ router.post(
     if (!errors.isEmpty()) return validationError(res, errors);
 
     try {
-      const survey = await Survey.findById(req.params.id);
+      const survey = await prisma.survey.findUnique({ where: { id: req.params.id } });
       if (!survey) return res.status(404).json({ error: 'Опрос не найден.' });
       if (survey.status !== 'active') {
         return res.status(400).json({ error: 'Этот опрос уже закрыт.' });
@@ -160,15 +162,19 @@ router.post(
 
       const { answers } = req.body;
 
-      const responseRecord = await Response.create({
-        surveyId: survey._id,
-        userId: req.user ? req.user.id : null,
-        answers,
+      const responseRecord = await prisma.response.create({
+        data: {
+          surveyId: survey.id,
+          userId: req.user ? req.user.id : null,
+          answers,
+        },
       });
 
       // Aggregate results
-      const results = { ...survey.results };
-      survey.questions.forEach((q, qi) => {
+      const questions = survey.questions;
+      const results = { ...(survey.results || {}) };
+
+      questions.forEach((q, qi) => {
         const ans = answers[qi];
         if (ans === undefined || ans === null || ans === '') return;
 
@@ -194,11 +200,12 @@ router.post(
         }
       });
 
-      survey.results = results;
-      survey.responses = (survey.responses || 0) + 1;
-      await survey.save();
+      const updated = await prisma.survey.update({
+        where: { id: survey.id },
+        data: { results, responses: survey.responses + 1 },
+      });
 
-      return res.json({ survey, responseId: responseRecord._id });
+      return res.json({ survey: updated, responseId: responseRecord.id });
     } catch (err) {
       console.error(err);
       return res.status(500).json({ error: 'Ошибка сервера.' });
@@ -209,13 +216,13 @@ router.post(
 // GET /api/surveys/:id/responses — get all responses (owner only)
 router.get('/:id/responses', requireAuth, async (req, res) => {
   try {
-    const survey = await Survey.findById(req.params.id);
+    const survey = await prisma.survey.findUnique({ where: { id: req.params.id } });
     if (!survey) return res.status(404).json({ error: 'Опрос не найден.' });
-    if (survey.authorId.toString() !== req.user.id) {
+    if (survey.authorId !== req.user.id) {
       return res.status(403).json({ error: 'Нет прав.' });
     }
 
-    const responses = await Response.find({ surveyId: req.params.id });
+    const responses = await prisma.response.findMany({ where: { surveyId: req.params.id } });
     return res.json({ responses, total: responses.length });
   } catch (err) {
     return res.status(500).json({ error: 'Ошибка сервера.' });

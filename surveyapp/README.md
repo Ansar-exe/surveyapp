@@ -34,10 +34,13 @@ cd ../server && npm install
 Создать файл `server/.env`:
 
 ```env
-MONGODB_URI=mongodb+srv://<user>:<password>@cluster0.mongodb.net/surveyapp
+DATABASE_URL=postgresql://<user>:<password>@<host>/neondb?sslmode=require&pgbouncer=true
+DIRECT_URL=postgresql://<user>:<password>@<host>/neondb?sslmode=require
 JWT_SECRET=your_secret_key_here
 PORT=5000
 ```
+
+> Строки подключения берутся из [neon.tech](https://neon.tech) → Connect.
 
 Создать файл `client/.env.local`:
 
@@ -83,7 +86,7 @@ npm start
 | Технология | Назначение |
 |---|---|
 | **Node.js + Express** | REST API сервер |
-| **MongoDB Atlas + Mongoose** | Облачная база данных |
+| **PostgreSQL (Neon) + Prisma ORM** | Облачная база данных |
 | **bcryptjs** | Хеширование паролей (cost=12) |
 | **jsonwebtoken** | JWT аутентификация |
 | **express-validator** | Серверная валидация |
@@ -118,11 +121,9 @@ surveyapp/
 ├── server/                     # Node.js бэкенд
 │   ├── middleware/
 │   │   ├── auth.js             # JWT middleware (requireAuth, optionalAuth)
-│   │   └── db.js               # Подключение к MongoDB Atlas
-│   ├── models/
-│   │   ├── User.js             # Mongoose схема пользователя
-│   │   ├── Survey.js           # Mongoose схема опроса
-│   │   └── Response.js         # Mongoose схема ответа
+│   │   └── db.js               # Prisma клиент + seed данных
+│   ├── prisma/
+│   │   └── schema.prisma       # Схема БД (User, Survey, Response)
 │   ├── routes/
 │   │   ├── auth.js             # POST /register, POST /login, GET /me
 │   │   ├── surveys.js          # GET/POST/PUT/DELETE /surveys + /respond
@@ -389,4 +390,4 @@ Authorization: Bearer <token>
 ## 👤 Автор
 
 Курсовой проект по дисциплине **ПМ04**  
-Стек: React · Node.js · Express · MongoDB Atlas · JWT · bcrypt
+Стек: React · Node.js · Express · PostgreSQL (Neon) · Prisma · JWT · bcrypt

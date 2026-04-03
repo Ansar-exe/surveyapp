@@ -10,7 +10,7 @@ export function WindowProvider({ children }) {
   const [windows, setWindows] = useState([
     { id: 'surveys', props: {}, minimized: false, zIndex: 1, spawnX: 90, spawnY: 10 },
   ]);
-  const [zTop, setZTop] = useState(2);
+  const [, setZTop] = useState(2);
 
   const openWindow = useCallback((id, props = {}) => {
     setZTop(prev => {

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useSurveys } from '../context/SurveyContext';
 import { useAuth } from '../context/AuthContext';
 import { useWindow } from '../context/WindowContext';
-import { Window, CategoryBadge, Alert, EmptyState, Loader } from '../components/UI';
+import { Window, CategoryBadge, EmptyState, Loader } from '../components/UI';
 
 const CATEGORIES = ['Все', 'Бизнес', 'Технологии', 'Образование', 'Здоровье', 'Развлечения', 'Другое'];
 

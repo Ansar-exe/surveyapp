@@ -97,6 +97,74 @@ export function Clock() {
   return <div className="win-taskbar__clock">🔊 {time}</div>;
 }
 
+// ── Start Menu ──
+function StartMenu({ onClose }) {
+  const { user, logout } = useAuth();
+  const { openWindow } = useWindow();
+
+  function go(id) {
+    openWindow(id);
+    onClose();
+  }
+
+  function handleLogout() {
+    logout();
+    onClose();
+  }
+
+  function handleShutdown() {
+    onClose();
+    window.dispatchEvent(new CustomEvent('surveypro:error', { detail: { critical: true } }));
+  }
+
+  const menuItems = [
+    { icon: '📋', label: 'Опросы',        id: 'surveys' },
+    { icon: '📊', label: 'Дашборд',       id: 'dashboard' },
+    { icon: '➕', label: 'Создать опрос', id: 'create' },
+    { icon: '👤', label: 'Профиль',       id: 'profile' },
+  ];
+
+  return (
+    <div className="win-startmenu">
+      {/* Left sidebar */}
+      <div className="win-startmenu__sidebar">
+        <span>SurveyPro 98</span>
+      </div>
+
+      {/* Menu items */}
+      <div className="win-startmenu__items">
+        {menuItems.map(item => (
+          <button key={item.id} className="win-startmenu__item" onClick={() => go(item.id)}>
+            <span className="win-startmenu__icon">{item.icon}</span>
+            {item.label}
+          </button>
+        ))}
+
+        <div className="win-startmenu__sep" />
+
+        {user ? (
+          <button className="win-startmenu__item" onClick={handleLogout}>
+            <span className="win-startmenu__icon">🚪</span>
+            Выйти ({user.username})
+          </button>
+        ) : (
+          <button className="win-startmenu__item" onClick={() => go('login')}>
+            <span className="win-startmenu__icon">🔑</span>
+            Войти
+          </button>
+        )}
+
+        <div className="win-startmenu__sep" />
+
+        <button className="win-startmenu__item win-startmenu__item--shutdown" onClick={handleShutdown}>
+          <span className="win-startmenu__icon">🔴</span>
+          Выключить...
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ── Taskbar ──
 const WINDOW_LABELS = {
   surveys:   '📋 Опросы',
@@ -109,13 +177,34 @@ const WINDOW_LABELS = {
 
 export function Taskbar() {
   const { user, logout } = useAuth();
-  const { windows, openWindow, focusWindow, minimizeWindow } = useWindow();
+  const { windows, focusWindow, minimizeWindow } = useWindow();
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    if (!menuOpen) return;
+    function handleClick() { setMenuOpen(false); }
+    window.addEventListener('mousedown', handleClick);
+    return () => window.removeEventListener('mousedown', handleClick);
+  }, [menuOpen]);
 
   return (
     <div className="win-taskbar">
-      <button className="win-taskbar__start" onClick={() => openWindow('surveys')}>
+      {/* Start button */}
+      <button
+        className={`win-taskbar__start${menuOpen ? ' win-taskbar__start--active' : ''}`}
+        onMouseDown={e => { e.stopPropagation(); setMenuOpen(v => !v); }}
+      >
         🪟 <strong>Пуск</strong>
       </button>
+
+      {/* Start menu popup */}
+      {menuOpen && (
+        <div onMouseDown={e => e.stopPropagation()}>
+          <StartMenu onClose={() => setMenuOpen(false)} />
+        </div>
+      )}
+
       <div className="win-taskbar__divider" />
       {windows.map(win => {
         const label = win.id.startsWith('survey-')

@@ -108,6 +108,7 @@ function Desktop() {
 export default function App() {
   const [booted, setBooted] = useState(() => sessionStorage.getItem('booted') === '1');
   const [bsod, setBsod] = useState(false);
+  const [shutdown, setShutdown] = useState(false);
 
   function handleBoot() {
     sessionStorage.setItem('booted', '1');
@@ -122,7 +123,29 @@ export default function App() {
     return () => window.removeEventListener('surveypro:error', handler);
   }, []);
 
+  useEffect(() => {
+    function handler() {
+      setShutdown(true);
+      setTimeout(() => window.close(), 2500);
+    }
+    window.addEventListener('surveypro:shutdown', handler);
+    return () => window.removeEventListener('surveypro:shutdown', handler);
+  }, []);
+
   if (!booted) return <BootScreen onDone={handleBoot} />;
+
+  if (shutdown) return (
+    <div style={{
+      position: 'fixed', inset: 0,
+      background: '#000',
+      display: 'flex', flexDirection: 'column',
+      alignItems: 'center', justifyContent: 'center',
+      color: '#fff', fontFamily: "'MS Sans Serif', Arial, sans-serif",
+    }}>
+      <div style={{ fontSize: 18, marginBottom: 24 }}>Завершение работы Windows...</div>
+      <div style={{ fontSize: 13, color: '#aaa' }}>Теперь питание компьютера можно отключить.</div>
+    </div>
+  );
 
   if (bsod) return (
     <BSOD

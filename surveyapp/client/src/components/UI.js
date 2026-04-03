@@ -114,7 +114,7 @@ function StartMenu({ onClose }) {
 
   function handleShutdown() {
     onClose();
-    window.dispatchEvent(new CustomEvent('surveypro:error', { detail: { critical: true } }));
+    window.dispatchEvent(new CustomEvent('surveypro:shutdown'));
   }
 
   const menuItems = [
